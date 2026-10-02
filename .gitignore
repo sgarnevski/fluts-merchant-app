@@ -1,0 +1,33 @@
+# Build output
+target/
+.mvn/wrapper/maven-wrapper.jar
+node_modules/
+dist/
+coverage/
+
+# Default working directory of flut-producer when run outside Docker
+/pipeline/
+
+# Task material (not part of the solution)
+/*.pdf
+/notes
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+
+# Kept outside the repository
+IMPLEMENTATION_PLAN.md
+
+# Checkout of the core made by ./install-core.sh
+.core/

@@ -1,0 +1,7 @@
+**/target
+.git
+frontend
+*.pdf
+notes
+pipeline
+.core

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.fluts</groupId>
+    <artifactId>fluts-app-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Trading of Fluts - platform</name>
+    <description>The platform around the Trading of Fluts core (github.com/sgarnevski/fluts-merchant): database, login, merchants, UI and the SFTP/Kafka pipeline</description>
+
+    <modules>
+        <module>flut-platform-common</module>
+        <module>flut-persistence</module>
+        <module>flut-app</module>
+        <module>flut-kafka</module>
+        <module>flut-consumer</module>
+        <module>flut-producer</module>
+        <module>flut-trader</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <!-- The core (flut-core, flut-common, flut-rest) from github.com/sgarnevski/fluts-merchant,
+             installed into the local Maven repository by ./install-core.sh -->
+        <fluts-merchant.version>1.0.0-SNAPSHOT</fluts-merchant.version>
+        <jacoco.version>0.8.15</jacoco.version>
+        <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
+        <springdoc.version>3.1.1</springdoc.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fluts</groupId>
+                <artifactId>flut-core</artifactId>
+                <version>${fluts-merchant.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fluts</groupId>
+                <artifactId>flut-common</artifactId>
+                <version>${fluts-merchant.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fluts</groupId>
+                <artifactId>flut-rest</artifactId>
+                <version>${fluts-merchant.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fluts</groupId>
+                <artifactId>flut-platform-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fluts</groupId>
+                <artifactId>flut-persistence</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fluts</groupId>
+                <artifactId>flut-kafka</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>${maven-pmd-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!-- 100 % line and branch coverage, per module; the build fails below that. -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>1.00</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>1.00</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Code style: every variable final (see config/pmd/ruleset.xml); the build fails on violations. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <rulesets>
+                        <ruleset>${maven.multiModuleProjectDirectory}/config/pmd/ruleset.xml</ruleset>
+                    </rulesets>
+                    <includeTests>true</includeTests>
+                    <targetJdk>${java.version}</targetJdk>
+                    <linkXRef>false</linkXRef>
+                    <printFailingErrors>true</printFailingErrors>
+                    <failOnViolation>true</failOnViolation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

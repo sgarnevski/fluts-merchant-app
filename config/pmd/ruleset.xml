@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="fluts"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Project code style. Main rule: every variable is declared final (fields, locals, parameters,
+        catch parameters, for-each variables, pattern variables).
+        PMD's built-in LocalVariableCouldBeFinal / MethodArgumentCouldBeFinal are not enough: they only
+        flag variables that are never reassigned, so a reassigned variable passes. These rules require
+        the modifier on every declaration, which makes reassignment a compile error.
+
+        Exceptions:
+        - fields of JPA @Entity / @Embeddable classes (the JPA spec forbids final persistent fields);
+        - lambda parameters ("(final var x) ->" is noise; lambdas stay short);
+        - parameters of methods without a body (abstract / interface methods), where final has no effect;
+        - try-with-resources variables, record components and interface constants (implicitly final).
+    </description>
+
+    <rule name="FinalLocalVariable"
+          language="java"
+          message="Local variable ''{0}'' must be final"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Every local variable (including for-each variables) is declared final.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//LocalVariableDeclaration
+    [not(parent::Resource)]
+    [not(pmd-java:modifiers() = 'final')]
+    /VariableDeclarator/VariableId
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="FinalField"
+          language="java"
+          message="Field ''{0}'' must be final"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Every field is final, except persistent fields of JPA entities / embeddables.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//FieldDeclaration
+    [not(pmd-java:modifiers() = 'final')]
+    [not(ancestor::ClassDeclaration[
+        pmd-java:hasAnnotation('jakarta.persistence.Entity')
+        or pmd-java:hasAnnotation('jakarta.persistence.Embeddable')
+        or pmd-java:hasAnnotation('jakarta.persistence.MappedSuperclass')])]
+    /VariableDeclarator/VariableId
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="FinalParameter"
+          language="java"
+          message="Parameter ''{0}'' must be final"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Every method / constructor parameter of a method with a body is final.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//FormalParameter
+    [not(pmd-java:modifiers() = 'final')]
+    [../../Block]
+    /VariableId
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="FinalCatchParameter"
+          language="java"
+          message="Catch parameter ''{0}'' must be final"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Every catch parameter is final.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//CatchParameter
+    [not(pmd-java:modifiers() = 'final')]
+    /VariableId
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="FinalPatternVariable"
+          language="java"
+          message="Pattern variable ''{0}'' must be final"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Every pattern variable (instanceof / switch patterns) is final.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+//TypePattern
+    [not(pmd-java:modifiers() = 'final')]
+    /VariableId
+]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Basic hygiene -->
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
+</ruleset>

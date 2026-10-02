@@ -1,0 +1,7 @@
+schuurs 1
+Maximum profit is 8.
+Number of fluts to buy: 4
+
+schuurs 2
+Maximum profit is 40.
+Number of fluts to buy: 6 7 8 9 10 12 13

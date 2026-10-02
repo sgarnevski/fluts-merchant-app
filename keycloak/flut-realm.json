@@ -1,0 +1,182 @@
+{
+  "realm": "flut",
+  "displayName": "Trading of Fluts",
+  "enabled": true,
+  "sslRequired": "none",
+  "roles": {
+    "realm": [
+      {
+        "name": "viewer",
+        "description": "Read the scenarios of the own merchant"
+      },
+      {
+        "name": "editor",
+        "description": "Create, change, delete, import and evaluate scenarios of the own merchant"
+      },
+      {
+        "name": "admin",
+        "description": "Read the scenarios of every merchant"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "flut-app",
+      "name": "Trading of Fluts",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "flut-app-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:5173/*",
+        "http://localhost:8081/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:5173/*##http://localhost:8081/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles in all tokens",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "merchant",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "merchant",
+            "claim.name": "merchant",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "dutch",
+      "enabled": true,
+      "email": "dutch@flut.example",
+      "emailVerified": true,
+      "firstName": "Daan",
+      "lastName": "de Vries",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dutch",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "viewer",
+        "editor"
+      ],
+      "attributes": {
+        "merchant": [
+          "dutch"
+        ]
+      }
+    },
+    {
+      "username": "french",
+      "enabled": true,
+      "email": "french@flut.example",
+      "emailVerified": true,
+      "firstName": "François",
+      "lastName": "Dubois",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "french",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "viewer",
+        "editor"
+      ],
+      "attributes": {
+        "merchant": [
+          "french"
+        ]
+      }
+    },
+    {
+      "username": "viewer",
+      "enabled": true,
+      "email": "viewer@flut.example",
+      "emailVerified": true,
+      "firstName": "Vera",
+      "lastName": "Viewer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "viewer",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "viewer"
+      ],
+      "attributes": {
+        "merchant": [
+          "dutch"
+        ]
+      }
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@flut.example",
+      "emailVerified": true,
+      "firstName": "Ada",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "admin"
+      ]
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"email\", \"displayName\": \"${email}\", \"validations\": {\"email\": {}, \"length\": {\"max\": 255}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"validations\": {\"length\": {\"max\": 255}, \"person-name-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"merchant\", \"displayName\": \"Merchant\", \"validations\": {\"length\": {\"max\": 30}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"multivalued\": false}], \"groups\": [{\"name\": \"user-metadata\", \"displayHeader\": \"User metadata\", \"displayDescription\": \"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ]
+  }
+}

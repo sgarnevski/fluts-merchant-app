@@ -1,0 +1,1269 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "description" : "Maximum profit and the numbers of fluts to buy, for piles bought from the top.",
+    "title" : "Trading of Fluts API",
+    "version" : "1.0"
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ],
+  "security" : [ {
+    "bearer" : [ ]
+  } ],
+  "tags" : [ {
+    "description" : "Stored scenarios and their results",
+    "name" : "Scenarios"
+  }, {
+    "description" : "Solve scenarios: maximum profit and the numbers of fluts to buy",
+    "name" : "Evaluations"
+  } ],
+  "paths" : {
+    "/api/evaluations" : {
+      "post" : {
+        "description" : "Send the scenarios either as a JSON body (normalized format) or as an uploaded file (multipart part `file`): `.txt` in the original format of the specification, or `.json` in the normalized format. Send `Accept: text/plain` to get the original output format.",
+        "operationId" : "evaluateFile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "example" : "{\n  \"scenarios\": [\n    { \"name\": \"Example 1\", \"schuurs\": [ { \"boxPrices\": [12, 3, 10, 7, 16, 5] } ] },\n    { \"name\": \"Example 2\", \"schuurs\": [\n        { \"boxPrices\": [7, 3, 11, 9, 10] },\n        { \"boxPrices\": [1, 2, 3, 4, 10, 16, 10, 4, 16] } ] }\n  ]\n}",
+              "schema" : {
+                "$ref" : "#/components/schemas/ScenariosInput"
+              }
+            },
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary",
+                    "description" : "A .txt or .json file"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluationResponse"
+                }
+              },
+              "text/plain" : {
+                "example" : "schuurs 1\nMaximum profit is 8.\nNumber of fluts to buy: 4\n\nschuurs 2\nMaximum profit is 40.\nNumber of fluts to buy: 6 7 8 9 10 12 13\n",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Results in input order"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "example" : {
+                  "type" : "about:blank",
+                  "title" : "Invalid input",
+                  "status" : 400,
+                  "detail" : "Schuur declares 3 boxes but lists 2 prices",
+                  "line" : 2
+                },
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Invalid input (with the line number for text input)"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "413" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Input larger than the configured limit"
+          }
+        },
+        "summary" : "Evaluate scenarios",
+        "tags" : [ "Evaluations" ]
+      }
+    },
+    "/api/me" : {
+      "get" : {
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "The logged-in user, their roles and their merchant",
+        "tags" : [ "Session" ]
+      }
+    },
+    "/api/merchants" : {
+      "get" : {
+        "operationId" : "list_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MerchantResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "All merchants, by name",
+        "tags" : [ "Merchants" ]
+      }
+    },
+    "/api/scenarios" : {
+      "get" : {
+        "description" : "Paged; sort by `name`, `createdAt` or `updatedAt`. Each item includes its computed `maxProfit`. Merchant users see their own scenarios; admins see every merchant's and may filter by `merchant`.",
+        "operationId" : "list",
+        "parameters" : [ {
+          "description" : "Only scenarios of this merchant (admins only; others always see their own)",
+          "in" : "query",
+          "name" : "merchant",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Only scenarios with this input type",
+          "in" : "query",
+          "name" : "inputType",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "JSON", "FILE", "KAFKA" ]
+          }
+        }, {
+          "description" : "Only scenarios whose name contains this text (case-insensitive)",
+          "in" : "query",
+          "name" : "name",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Zero-based page index (0..N)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "description" : "The size of the page to be returned",
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 20,
+            "minimum" : 1
+          }
+        }, {
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "createdAt,DESC" ],
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScenarioPage"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "List scenarios",
+        "tags" : [ "Scenarios" ]
+      },
+      "post" : {
+        "description" : "For the calling user's merchant. The `Location` header points to the new scenario.",
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScenarioRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScenarioResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Create a scenario",
+        "tags" : [ "Scenarios" ]
+      }
+    },
+    "/api/scenarios/import" : {
+      "post" : {
+        "description" : "`.txt` in the original format of the specification, or `.json` in the normalized format. Answers the results with the ids of the stored scenarios, in file order.",
+        "operationId" : "importFile",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary",
+                    "description" : "A .txt or .json file"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluationResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Import scenarios from a file",
+        "tags" : [ "Scenarios" ]
+      }
+    },
+    "/api/scenarios/{id}" : {
+      "delete" : {
+        "operationId" : "delete",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Delete a scenario",
+        "tags" : [ "Scenarios" ]
+      },
+      "get" : {
+        "operationId" : "get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScenarioResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Get a scenario with its result",
+        "tags" : [ "Scenarios" ]
+      },
+      "put" : {
+        "description" : "Replaces name and schuurs; input type and creation time stay.",
+        "operationId" : "replace",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScenarioRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ScenarioResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Replace a scenario",
+        "tags" : [ "Scenarios" ]
+      }
+    },
+    "/api/scenarios/{id}/file" : {
+      "get" : {
+        "description" : "Useful for large scenarios; the file can be evaluated or imported again as it is.",
+        "operationId" : "file",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Download a scenario as a text file in the original input format",
+        "tags" : [ "Scenarios" ]
+      }
+    },
+    "/api/scenarios/{id}/result" : {
+      "get" : {
+        "operationId" : "result",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EvaluationResult"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Get only the result of a scenario",
+        "tags" : [ "Scenarios" ]
+      }
+    },
+    "/api/scenarios/{id}/result/file" : {
+      "get" : {
+        "operationId" : "resultFile",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Download the result of a scenario as a text file in the original output format",
+        "tags" : [ "Scenarios" ]
+      }
+    },
+    "/api/scenarios/{id}/schuurs/{position}/file" : {
+      "get" : {
+        "description" : "The schuur (1-based position) as a scenario of its own, so it can be evaluated on its own.",
+        "operationId" : "schuurFile",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "in" : "path",
+          "name" : "position",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Download one schuur as a text file in the original input format",
+        "tags" : [ "Scenarios" ]
+      }
+    },
+    "/api/scenarios/{id}/schuurs/{position}/result/file" : {
+      "get" : {
+        "description" : "The best buy at this schuur alone; the block is numbered with the schuur's position (1-based).",
+        "operationId" : "schuurResultFile",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "in" : "path",
+          "name" : "position",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Download the result of one schuur as a text file in the original output format",
+        "tags" : [ "Scenarios" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "EvaluationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "results" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EvaluationResult"
+            }
+          }
+        },
+        "required" : [ "results" ]
+      },
+      "EvaluationResult" : {
+        "type" : "object",
+        "description" : "Result for one scenario",
+        "properties" : {
+          "flutCounts" : {
+            "type" : "array",
+            "example" : [ 6, 7, 8, 9, 10, 12, 13 ],
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Id of the saved scenario; present only when the scenario was saved",
+            "example" : 17
+          },
+          "maxProfit" : {
+            "type" : "integer",
+            "format" : "int64",
+            "example" : 40
+          },
+          "scenario" : {
+            "type" : "string",
+            "example" : "Example 2"
+          }
+        },
+        "required" : [ "flutCounts", "maxProfit", "scenario" ]
+      },
+      "MeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "merchant" : {
+            "$ref" : "#/components/schemas/MerchantResponse"
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "roles", "username" ]
+      },
+      "MerchantResponse" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name" ]
+      },
+      "PageInfo" : {
+        "type" : "object",
+        "properties" : {
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "number", "size", "totalElements", "totalPages" ]
+      },
+      "ProblemDetail" : {
+        "type" : "object",
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "instance" : {
+            "type" : "string",
+            "format" : "uri"
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "format" : "uri"
+          }
+        }
+      },
+      "ScenarioInput" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "schuurs" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SchuurInput"
+            }
+          }
+        },
+        "required" : [ "schuurs" ]
+      },
+      "ScenarioPage" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ScenarioSummary"
+            }
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageInfo"
+          }
+        },
+        "required" : [ "content", "page" ]
+      },
+      "ScenarioRequest" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "example" : "Example 2",
+            "minLength" : 1
+          },
+          "schuurs" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SchuurRequest"
+            },
+            "maxItems" : 1000,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "name", "schuurs" ]
+      },
+      "ScenarioResponse" : {
+        "type" : "object",
+        "properties" : {
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "flutCounts" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "inputType" : {
+            "type" : "string",
+            "enum" : [ "JSON", "FILE", "KAFKA" ]
+          },
+          "maxProfit" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "merchant" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "schuurs" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SchuurResponse"
+            }
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "createdAt", "flutCounts", "id", "inputType", "maxProfit", "merchant", "name", "schuurs", "updatedAt" ]
+      },
+      "ScenarioSummary" : {
+        "type" : "object",
+        "properties" : {
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "inputType" : {
+            "type" : "string",
+            "enum" : [ "JSON", "FILE", "KAFKA" ]
+          },
+          "maxProfit" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "merchant" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "schuurCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "createdAt", "id", "inputType", "maxProfit", "merchant", "name", "schuurCount", "updatedAt" ]
+      },
+      "ScenariosInput" : {
+        "type" : "object",
+        "properties" : {
+          "scenarios" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ScenarioInput"
+            }
+          }
+        },
+        "required" : [ "scenarios" ]
+      },
+      "SchuurInput" : {
+        "type" : "object",
+        "properties" : {
+          "boxPrices" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          }
+        },
+        "required" : [ "boxPrices" ]
+      },
+      "SchuurRequest" : {
+        "type" : "object",
+        "properties" : {
+          "boxPrices" : {
+            "type" : "array",
+            "example" : [ 7, 3, 11, 9, 10 ],
+            "items" : {
+              "type" : "integer",
+              "format" : "int32",
+              "exclusiveMinimum" : 0
+            },
+            "maxItems" : 10000,
+            "minItems" : 0
+          }
+        },
+        "required" : [ "boxPrices" ]
+      },
+      "SchuurResponse" : {
+        "type" : "object",
+        "properties" : {
+          "boxPrices" : {
+            "type" : "array",
+            "example" : [ 7, 3, 11, 9, 10 ],
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "flutCounts" : {
+            "type" : "array",
+            "example" : [ 2, 4, 5 ],
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "maxProfit" : {
+            "type" : "integer",
+            "format" : "int64",
+            "example" : 10
+          }
+        },
+        "required" : [ "boxPrices", "flutCounts", "maxProfit" ]
+      }
+    },
+    "securitySchemes" : {
+      "bearer" : {
+        "bearerFormat" : "JWT",
+        "description" : "Keycloak access token; see the README for getting one with curl",
+        "scheme" : "bearer",
+        "type" : "http"
+      }
+    }
+  }
+}

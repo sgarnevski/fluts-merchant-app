@@ -1,0 +1,191 @@
+# Full app: PostgreSQL + Keycloak + flut-app (API) + frontend (UI, nginx). Open http://localhost:3000
+# and log in as editor / editor or viewer / viewer.
+#
+# With `--profile pipeline` also: trader-dutch / trader-french --SFTP--> sftp --shared volume--> flut-producer
+#                                  --> kafka --> flut-consumer --> PostgreSQL (input type KAFKA, per merchant)
+# Secrets (demo defaults): DUTCH_SECRET, FRENCH_SECRET, PIPELINE_SECRET, DUTCH_SFTP_PASSWORD, FRENCH_SFTP_PASSWORD
+# Each service is built and deployed on its own: `docker compose up --build frontend` rebuilds only the UI.
+name: fluts
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: flut
+      POSTGRES_USER: flut
+      POSTGRES_PASSWORD: flut
+    ports:
+      - "5433:5432"   # 5433 on the host, so a local PostgreSQL on 5432 keeps working
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flut -d flut"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # Reachable as http://keycloak.localhost:8180 from the browser (*.localhost is the local machine)
+  # and, through the network alias, from flut-app: one issuer URL for both, so tokens validate.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://keycloak.localhost:8180
+      KC_HTTP_PORT: "8180"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "8180:8180"
+    networks:
+      default:
+        aliases:
+          - keycloak.localhost
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+
+  flut-app:
+    build:
+      context: .
+      target: flut-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/flut
+      SPRING_DATASOURCE_USERNAME: flut
+      SPRING_DATASOURCE_PASSWORD: flut
+      KEYCLOAK_ISSUER_URI: http://keycloak.localhost:8180/realms/flut
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      FLUT_APP_URL: http://flut-app:8081
+    ports:
+      - "3000:80"
+    depends_on:
+      - flut-app
+
+  # ---- Pipeline (profile "pipeline") ----
+
+  # Single-node Kafka (KRaft). Inside Docker the broker is kafka:9092, from the host localhost:9094.
+  # No volume: the topic is only transport, and its retention is bounded (see flut.kafka.*).
+  kafka:
+    image: apache/kafka:4.2.2
+    profiles: [pipeline]
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      # Topics are created by the apps with their retention settings, never implicitly with defaults
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    ports:
+      - "9094:9094"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  # The "common directory": an SFTP server with one account per merchant (port 2222 on the host),
+  # dutch / dutch and french / french. /home is a volume that flut-producer reads as a plain directory.
+  sftp:
+    image: atmoz/sftp:alpine
+    profiles: [pipeline]
+    # user:password:uid:gid:directories (created in the user's home on the volume, owned by the user)
+    command: >
+      dutch:${DUTCH_SFTP_PASSWORD:-dutch}:1001:1001:data/inbox,data/processed,data/failed
+      french:${FRENCH_SFTP_PASSWORD:-french}:1002:1002:data/inbox,data/processed,data/failed
+    ports:
+      - "2222:22"
+    volumes:
+      - pipeline-data:/home
+
+  # The demo traders: one per merchant, each signing its files with its own secret.
+  trader-dutch:
+    build:
+      context: .
+      target: flut-trader
+    profiles: [pipeline]
+    environment:
+      FLUT_MERCHANT: dutch
+      FLUT_MERCHANT_SECRET: ${DUTCH_SECRET:-dutch-secret}
+      SFTP_HOST: sftp
+      SFTP_PORT: "22"
+      SFTP_PASSWORD: ${DUTCH_SFTP_PASSWORD:-dutch}
+    depends_on:
+      - sftp
+
+  trader-french:
+    build:
+      context: .
+      target: flut-trader
+    profiles: [pipeline]
+    environment:
+      FLUT_MERCHANT: french
+      FLUT_MERCHANT_SECRET: ${FRENCH_SECRET:-french-secret}
+      SFTP_HOST: sftp
+      SFTP_PORT: "22"
+      SFTP_PASSWORD: ${FRENCH_SFTP_PASSWORD:-french}
+    depends_on:
+      - sftp
+
+  flut-producer:
+    build:
+      context: .
+      target: flut-producer
+    profiles: [pipeline]
+    # Root: may read and move every merchant's files (the SFTP accounts own them with different uids)
+    user: "0:0"
+    environment:
+      FLUT_PRODUCER_DIRECTORY: /data
+      FLUT_DUTCH_SECRET: ${DUTCH_SECRET:-dutch-secret}
+      FLUT_FRENCH_SECRET: ${FRENCH_SECRET:-french-secret}
+      FLUT_PIPELINE_SECRET: ${PIPELINE_SECRET:-flut-pipeline-secret}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    volumes:
+      - pipeline-data:/data
+    depends_on:
+      kafka:
+        condition: service_healthy
+      sftp:
+        condition: service_started
+
+  flut-consumer:
+    build:
+      context: .
+      target: flut-consumer
+    profiles: [pipeline]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/flut
+      SPRING_DATASOURCE_USERNAME: flut
+      SPRING_DATASOURCE_PASSWORD: flut
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      FLUT_PIPELINE_SECRET: ${PIPELINE_SECRET:-flut-pipeline-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  pipeline-data:
